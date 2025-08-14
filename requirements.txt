@@ -1,6 +1,8 @@
+starlette
 fastapi
 uvicorn[standard]
 python-dotenv
+pydantic-settings
 python-docx
 pdf2docx
 python-multipart

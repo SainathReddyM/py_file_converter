@@ -6,3 +6,4 @@ pydantic-settings
 python-docx
 pdf2docx
 python-multipart
+Pillow

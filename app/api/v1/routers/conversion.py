@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import List
 
 from fastapi import APIRouter, UploadFile, File, Depends
 from starlette.background import BackgroundTask
@@ -75,6 +76,60 @@ async def convert_word_to_pdf(
         )
     except AppException as e:
         # This will be caught by our custom exception handler in main.py
+        raise e
+
+@router.post(
+    "/images-to-pdf",
+    summary="Convert Images to a single PDF",
+    description="Upload one or more image files (JPG, PNG, etc.) to convert them into a single PDF document."
+)
+async def convert_images_to_pdf(
+    files: List[UploadFile] = File(..., description="One or more image files to be converted."),
+    service: ConversionService = Depends()
+):
+    """
+    Endpoint to convert multiple image files into a single PDF.
+    """
+    logger.info(f"--- LOG: images-to-pdf controller endpoint CALLED with {len(files)} file(s) ---")
+    try:
+        pdf_path = await service.convert_images_to_pdf(files)
+
+        # The filename the user will see when downloading
+        download_filename = "converted_images.pdf"
+
+        return FileResponse(
+            path=pdf_path,
+            media_type='application/pdf',
+            filename=download_filename,
+            background=BackgroundTask(os.remove, pdf_path)
+        )
+    except AppException as e:
+        raise e
+
+@router.post(
+    "/pdf-to-images",
+    summary="Convert PDF to Images (zipped)",
+    description="Upload a PDF file to convert each page into a PNG image. Returns a zip file containing all images."
+)
+async def convert_pdf_to_images(
+    file: UploadFile = File(..., description="The PDF file to be converted."),
+    service: ConversionService = Depends()
+):
+    """
+    Endpoint to convert a PDF file into a zip archive of images.
+    """
+    logger.info(f"--- LOG: pdf-to-images controller endpoint CALLED for file: {file.filename} ---")
+    try:
+        zip_path = await service.convert_pdf_to_images(file)
+        # The filename the user will see when downloading
+        download_filename = f"{os.path.splitext(file.filename)[0]}.zip"
+        return FileResponse(
+            path=zip_path,
+            media_type='application/zip',  # <-- Correct MIME type for a zip file
+            filename=download_filename,
+            background=BackgroundTask(os.remove, zip_path)  # Clean up the zip file after sending
+        )
+    except AppException as e:
         raise e
 
 

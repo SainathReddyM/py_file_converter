@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+
+from app.api.v1.dependencies.security import get_api_key
 from app.api.v1.routers.conversion import router as v1_conversion_router
 from app.api.v1.schemas.response_schema import ErrorResponse
 from app.core.config import settings
@@ -38,12 +40,14 @@ async def generic_exception_handler(request: Request, exc: Exception):
     )
 
 # --- Include API Routers ---
-# This includes all endpoints from the conversion router under /api/v1
 app.include_router(
     v1_conversion_router,
     prefix=f"{settings.API_PREFIX}/v1/conversion",
-    tags=["V1 - Conversion"]
+    tags=["V1 - Conversion"],
+    dependencies=[Depends(get_api_key)]  # <-- APPLY THE SECURITY HERE
 )
+
+
 
 # --- Root Endpoint for Health Check ---
 @app.get("/", tags=["Health Check"])
